@@ -1,82 +1,86 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ReactFlow, applyNodeChanges, applyEdgeChanges, Background, Controls, MiniMap, BackgroundVariant } from '@xyflow/react';
 import type { Node, Edge, NodeChange, EdgeChange } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 
 import { TableNode } from './TableNode';
+import type { DbSchema } from './types/schema';
 
 const nodeTypes = {
   tableNode: TableNode,
 };
 
-const initialNodes: Node[] = [
-  {
-    id: 'publishers',
-    type: 'tableNode',
-    position: { x: 50, y: 50 },
-    data: {
-      tableName: 'publishers',
-      columns: [
-        { name: 'pub_id', type: 'int', isPrimaryKey: true },
-        { name: 'pub_name', type: 'varchar' },
-        { name: 'city', type: 'varchar' },
-        { name: 'state', type: 'char' },
-        { name: 'country', type: 'varchar' },
-      ],
-    },
-  },
-  {
-    id: 'employee',
-    type: 'tableNode',
-    position: { x: 350, y: 50 },
-    data: {
-      tableName: 'employee',
-      columns: [
-        { name: 'emp_id', type: 'int', isPrimaryKey: true },
-        { name: 'fname', type: 'varchar' },
-        { name: 'minit', type: 'char' },
-        { name: 'lname', type: 'varchar' },
-        { name: 'job_id', type: 'int', isForeignKey: true },
-        { name: 'job_lvl', type: 'tinyint' },
-        { name: 'pub_id', type: 'int', isForeignKey: true },
-        { name: 'hire_date', type: 'datetime' },
-      ],
-    },
-  },
-  {
-    id: 'titles',
-    type: 'tableNode',
-    position: { x: 50, y: 300 },
-    data: {
-      tableName: 'titles',
-      columns: [
-        { name: 'title_id', type: 'int', isPrimaryKey: true },
-        { name: 'title', type: 'varchar' },
-        { name: 'type', type: 'char' },
-        { name: 'pub_id', type: 'int', isForeignKey: true },
-        { name: 'price', type: 'money' },
-        { name: 'advance', type: 'money' },
-        { name: 'royalty', type: 'int' },
-        { name: 'ytd_sales', type: 'int' },
-        { name: 'notes', type: 'varchar' },
-        { name: 'pubdate', type: 'datetime' },
-      ],
-    },
-  },
-];
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-const initialEdges: Edge[] = [
-  { id: 'e1', source: 'publishers', target: 'employee', sourceHandle: 'pub_id-source', targetHandle: 'pub_id-target', animated: true },
-  { id: 'e2', source: 'publishers', target: 'titles', sourceHandle: 'pub_id-source', targetHandle: 'pub_id-target', animated: true },
-  // { id: 'e3', source: 'stores', target: 'discounts', sourceHandle: 'source', targetHandle: 'target', animated: true },
-  // { id: 'e4', source: 'stores', target: 'sales', sourceHandle: 'source', targetHandle: 'target', animated: true },
-  // { id: 'e5', source: 'titles', target: 'sales', sourceHandle: 'source', targetHandle: 'target', animated: true },
-];
+/** Fetch database schema from API and return in diagram-ready format */
+async function fetchSchema(): Promise<DbSchema> {
+  const res = await fetch(`${API_BASE}/api/schema`);
+  if (!res.ok) throw new Error(`Schema fetch failed: ${res.status}`);
+  const json = await res.json();
+  return { tables: json.tables ?? [], relationships: json.relationships ?? [] };
+}
+
+/** Build ReactFlow nodes and edges from saved schema (readable format for diagram view) */
+function schemaToDiagram(schema: DbSchema): { nodes: Node[]; edges: Edge[] } {
+  const NODE_WIDTH = 220;
+  const NODE_HEIGHT = 40;
+  const GAP_X = 80;
+  const GAP_Y = 60;
+
+  const nodes: Node[] = schema.tables.map((table, i) => {
+    const row = Math.floor(i / 3);
+    const col = i % 3;
+    return {
+      id: table.name,
+      type: 'tableNode',
+      position: { x: col * (NODE_WIDTH + GAP_X), y: row * (NODE_HEIGHT * (table.columns.length + 1) + GAP_Y) },
+      data: {
+        tableName: table.name,
+        columns: table.columns.map((c) => ({
+          name: c.name,
+          type: c.type,
+          isPrimaryKey: c.isPrimaryKey,
+          isForeignKey: c.isForeignKey,
+        })),
+      },
+    };
+  });
+
+  const edges: Edge[] = schema.relationships.map((rel, i) => ({
+    id: `e-${rel.fromTable}-${rel.fromColumn}-${rel.toTable}-${i}`,
+    source: rel.fromTable,
+    target: rel.toTable,
+    sourceHandle: `${rel.fromColumn}-source`,
+    targetHandle: `${rel.toColumn}-target`,
+    animated: true,
+  }));
+
+  return { nodes, edges };
+}
 
 export default function App() {
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  /** Database schema in readable format – saved for diagram view and later use */
+  const [schema, setSchema] = useState<DbSchema | null>(null);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+
+  useEffect(() => {
+    fetchSchema()
+      .then((data) => {
+        setSchema(data);
+        setSchemaError(null);
+        const { nodes: nextNodes, edges: nextEdges } = schemaToDiagram(data);
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+      })
+      .catch((err) => {
+        setSchemaError(err instanceof Error ? err.message : 'Failed to load schema');
+        setSchema(null);
+      });
+  }, []);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -89,6 +93,16 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
+      {schema && !schemaError && (
+        <div style={{ position: 'absolute', top: 8, left: 8, padding: '4px 8px', background: '#1a3a1a', color: '#8f8', zIndex: 10, borderRadius: 4, fontSize: 12 }}>
+          Schema: {schema.tables.length} tables, {schema.relationships.length} relationships
+        </div>
+      )}
+      {schemaError && (
+        <div style={{ position: 'absolute', top: 8, left: 8, right: 8, padding: 8, background: '#4a1a1a', color: '#f88', zIndex: 10, borderRadius: 4 }}>
+          {schemaError}
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
