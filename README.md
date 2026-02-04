@@ -6,6 +6,10 @@ A database schema visualization tool that connects to PostgreSQL and renders tab
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat&logo=typescript)
 ![React](https://img.shields.io/badge/React-19-61dafb?style=flat&logo=react)
 
+## Demo:
+![dbviewerdemo](https://github.com/user-attachments/assets/fb66797d-ea3d-42b1-a6c9-4c98c0a3c9a2)
+
+
 ## Features
 
 - **Interactive diagram** – Tables displayed as draggable nodes using React Flow
