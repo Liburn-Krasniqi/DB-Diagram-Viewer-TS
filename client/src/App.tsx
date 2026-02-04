@@ -48,11 +48,11 @@ function schemaToDiagram(schema: DbSchema): { nodes: Node[]; edges: Edge[] } {
   });
 
   const edges: Edge[] = schema.relationships.map((rel, i) => ({
-    id: `e-${rel.fromTable}-${rel.fromColumn}-${rel.toTable}-${i}`,
-    source: rel.fromTable,
-    target: rel.toTable,
-    sourceHandle: `${rel.fromColumn}-source`,
-    targetHandle: `${rel.toColumn}-target`,
+    id: `e-${rel.toTable}-${rel.toColumn}-${rel.fromTable}-${rel.fromColumn}-${i}`,
+    source: rel.toTable,
+    target: rel.fromTable,
+    sourceHandle: `${rel.toColumn}-source`,
+    targetHandle: `${rel.fromColumn}-target`,
     animated: true,
   }));
 

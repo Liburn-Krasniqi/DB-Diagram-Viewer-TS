@@ -49,11 +49,21 @@ export const TableNode = memo(({ data }: { data: TableNodeData }) => {
             key={index}
             style={{
               padding: '6px 12px',
-              borderBottom: index < data.columns.length - 1 ? '1px solid #c6c6c6' : 'none',
+              borderBottom: index < data.columns.length - 1 ? '1px solid #b0b0b0' : 'none',
+              borderLeft: column.isPrimaryKey
+                ? '3px solid #eab308'
+                : column.isForeignKey
+                  ? '3px solid #3b82f6'
+                  : '3px solid transparent',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              position: 'relative'
+              position: 'relative',
+              background: column.isPrimaryKey
+                ? 'rgba(234, 179, 8, 0.08)'
+                : column.isForeignKey
+                  ? 'rgba(59, 130, 246, 0.08)'
+                  : undefined,
             }}
           >
             {/* Primary Key Icon */}
@@ -68,7 +78,7 @@ export const TableNode = memo(({ data }: { data: TableNodeData }) => {
             {/* Foreign Key Icon */}
             {column.isForeignKey && !column.isPrimaryKey && (
               <span style={{ 
-                color: '#6b7280',
+                color: '#3b82f6',
                 fontSize: '12px'
               }}>🔗</span>
             )}
@@ -98,7 +108,7 @@ export const TableNode = memo(({ data }: { data: TableNodeData }) => {
                 position={Position.Right}
                 id={`${column.name}-target`}
                 style={{
-                  background: '#6b7280',
+                  background: '#3b82f6',
                   width: '8px',
                   height: '8px',
                   right: '-4px',
@@ -113,12 +123,12 @@ export const TableNode = memo(({ data }: { data: TableNodeData }) => {
                 position={Position.Left}
                 id={`${column.name}-source`}
                 style={{
-                  background: '#6b7280',
+                  background: '#eab308',
                   width: '8px',
                   height: '8px',
-                  right: '-4px',
+                  left: '-4px',
                   top: '50%',
-                  transform: 'translateY(-50%), translateX(-50%)',
+                  transform: 'translateY(-50%)',
                 }}
               />
             )}
