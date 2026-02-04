@@ -50,20 +50,20 @@ export const TableNode = memo(({ data }: { data: TableNodeData }) => {
             style={{
               padding: '6px 12px',
               borderBottom: index < data.columns.length - 1 ? '1px solid #b0b0b0' : 'none',
-              borderLeft: column.isPrimaryKey
-                ? '3px solid #eab308'
-                : column.isForeignKey
-                  ? '3px solid #3b82f6'
-                  : '3px solid transparent',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               position: 'relative',
               background: column.isPrimaryKey
-                ? 'rgba(234, 179, 8, 0.08)'
+                ? 'linear-gradient(to right, rgba(234, 179, 8, 0.35) 0%, rgba(234, 179, 8, 0.1) 30%, #c6c6c6 100%)'
                 : column.isForeignKey
-                  ? 'rgba(59, 130, 246, 0.08)'
-                  : undefined,
+                  ? 'linear-gradient(to right, rgba(59, 130, 246, 0.35) 0%, rgba(59, 130, 246, 0.1) 30%, #c6c6c6 100%)'
+                  : '#c6c6c6',
+              borderLeft: column.isPrimaryKey
+                ? '3px solid #eab308'
+                : column.isForeignKey
+                  ? '3px solid #3b82f6'
+                  : '3px solid transparent',
             }}
           >
             {/* Primary Key Icon */}
